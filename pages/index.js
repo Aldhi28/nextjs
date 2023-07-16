@@ -1,26 +1,61 @@
+import { Fragment } from "react";
+import Head from "next/head";
+import { MongoClient } from "mongodb";
+
 import MeetupList from "../components/meetups/MeetupList";
 
-const DUMMY_MEETUP = [
-  {
-    id: "m1",
-    title: "Pertemuan Pertama",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRApH1OVPc0cy6Zoe79SXjlnsfs7Y-Rap28Ug&usqp=CAU",
-    address: "jl gunung kapur 4, 12534 Depok Kota",
-    description: "ini adalah pertemuan pertama",
-  },
-  {
-    id: "m2",
-    title: "Pertemuan kedua ",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRApH1OVPc0cy6Zoe79SXjlnsfs7Y-Rap28Ug&usqp=CAU",
-    address: "jl gunung kapur 4, 12534 Depok Kota",
-    description: "ini adalah pertemuan ke dua",
-  },
-];
+function HomePage(props) {
+  return (
+    <Fragment>
+      <Head>
+        <title>React Meetups</title>
+        <meta
+          name="description"
+          content="Browse a huge list of highly active React meetups!"
+        />
+      </Head>
+      <MeetupList meetups={props.meetups} />;
+    </Fragment>
+  );
+}
 
-function HomePage() {
-  return <MeetupList meetups={DUMMY_MEETUP} />;
+// export async function getServerSideProps(context) {
+//   const req = context.req;
+//   const res = context.res;
+
+//   // fetch data from an API
+
+//   return {
+//     props: {
+//       meetups: DUMMY_MEETUPS
+//     }
+//   };
+// }
+
+export async function getStaticProps() {
+  // fetch data from an API
+  const client = await MongoClient.connect(
+    "mongodb+srv://aldhi:aldhi@clusters.mpz3a9d.mongodb.net/?meetups=true&w=majority"
+  );
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find().toArray();
+
+  client.close();
+
+  return {
+    props: {
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
+    },
+    revalidate: 1,
+  };
 }
 
 export default HomePage;
